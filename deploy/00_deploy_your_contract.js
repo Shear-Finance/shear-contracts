@@ -20,38 +20,39 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
   
   const devAccountAddress = "0x1Fc444e3E4C60e864BfBaA25953B42Fa73695Cf8"
   
-  await deploy("Erc20Scuba", {
+  await deploy("GovernanceToken", {
     from: deployer,
     args: [],
     log: true,
-    waitConfirmations: 1,
+    waitConfirmations: 2,
 	skipIfAlreadyDeployed: false,
   })
-  const Erc20Scuba = await ethers.getContract("Erc20Scuba", deployer)
+  const GovernanceToken = await ethers.getContract("GovernanceToken", deployer)
     
 
 
   await deploy("Staking", {
     from: deployer,
-    args: [Erc20Scuba.address],
+    args: [GovernanceToken.address],
     log: true,
-    waitConfirmations: 1,
+    waitConfirmations: 2,
 	skipIfAlreadyDeployed: false,
   })
   const Staking = await ethers.getContract("Staking", deployer)
   
   
 	
-  await deploy("MasterDiver", {
+  await deploy("MasterChef", {
     from: deployer,
-    args: [Erc20Scuba.address, devAccountAddress, devAccountAddress, Staking.address],
+    args: [GovernanceToken.address, devAccountAddress, devAccountAddress, Staking.address],
     log: true,
-    waitConfirmations: 1,
+    waitConfirmations: 2,
 	skipIfAlreadyDeployed: false,
   })
-  const MasterDiver = await ethers.getContract("MasterDiver", deployer)
+  const MasterChef = await ethers.getContract("MasterChef", deployer)
   try {
-	await Erc20Scuba.changeMasterchef(MasterDiver.address);
+	let tx = await GovernanceToken.changeMasterchef(MasterChef.address);
+	await tx.wait()
   }
   catch(e) { } // could fail if already deployed
 
@@ -59,43 +60,56 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
 
 
 
-  await deploy("VMMFactory", {
+  await deploy("PoolFactory", {
     from: deployer,
     log: true,
-    waitConfirmations: 1,
+    waitConfirmations: 2,
   })
-  const VMMFactory = await ethers.getContract("VMMFactory", deployer)
+  const PoolFactory = await ethers.getContract("PoolFactory", deployer)
   
   
   
-  await deploy("VMMRouter", {
+  await deploy("Router", {
     from: deployer,
     log: true,
-    waitConfirmations: 1,
+    waitConfirmations: 2,
   });
-  const VMMRouter = await ethers.getContract("VMMRouter", deployer);
+  const Router = await ethers.getContract("Router", deployer);
   try {
-	await VMMRouter.updateFactory(VMMFactory.address);
+	let tx1 = await Router.updateFactory(PoolFactory.address, 1);
+	await tx1.wait()
   }
   catch(e){
-	  console.log("VMMRouter couldnt change factory address")
+	  console.log("Router couldnt change factory address")
   }
   
-
+/*
   console.log("Step 1")
   const usdcDaiUniPair = "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5";
   const uniRouter = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
   try {
-	await VMMRouter.updatePool(usdcDaiUniPair, uniRouter, "UNI");
-	const newPool = await VMMRouter.pairToPool(usdcDaiUniPair) ;
-	await MasterDiver.add(100, newPool, false) //add pool in masterchef, pool number 0 baby
+	  
+	await Router.createPool(usdcDaiUniPair, uniRouter, "UNI");
+	  
+  }
+  catch(e){console.log('create pool failed', e)}
+  try {
+	const newPool = await Router.pairToPool(usdcDaiUniPair) ;
+	await MasterChef.add(100, newPool, false) //add pool in masterchef, pool number 0 baby
   }
   catch(e) { console.log("Couldnt create new pool maybe didnt redeploy", e)  }
-  
-  
+*/
+
+//give masterchef ownership to dev so he can set rewards
+  try {
+	let tx2 = await MasterChef.transferOwnership(devAccountAddress) //add pool in masterchef, pool number 0 baby
+	await tx2.wait()
+  }
+  catch(e) { console.log("Couldnt transfer masterchef ownership", e)  }
+  /*
   console.log("Step 2")
   // Deploy a pool to get ABI updated
-  await deploy("VMMPool", {
+  await deploy("Pool", {
     // Learn more about args here: https://www.npmjs.com/package/hardhat-deploy#deploymentsdeploy
     from: deployer,
     args: ["0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5", "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", "VMM-SA-ASD", "UNI", "PLI-PLOP"],
@@ -103,16 +117,16 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
     waitConfirmations: 5,
   })
   console.log("Step 3")
-  const DummyPool = await ethers.getContract("VMMPool", deployer)
+  const DummyPool = await ethers.getContract("Pool", deployer)
   
   console.log("Step 4")
   // Getting a previously deployed contract
-  const usdcDaiVmmPool = await VMMRouter.pairToPool(usdcDaiUniPair);
-  const VMMPool = await ethers.getContractAt("VMMPool", usdcDaiVmmPool);
+  const usdcDaiPool = await Router.pairToPool(usdcDaiUniPair);
+  const Pool = await ethers.getContractAt("Pool", usdcDaiPool);
   
   // Changing ownerships to dev for testing
-  //await VMMRouter.transferOwnership(devAccountAddress);
-
+  //await Router.transferOwnership(devAccountAddress);
+*/
 
 
   /*
@@ -155,4 +169,4 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
   //   console.error(error);
   // }
 };
-module.exports.tags = ["VMMRouter", "VMMPool", "Erc20Scuba", "MasterDiver"];
+module.exports.tags = ["Router", "Pool", "GovernanceToken", "MasterChef"];

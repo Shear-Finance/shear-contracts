@@ -1,0 +1,179 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "InterestRates",
+  "sourceName": "contracts/InterestRates.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "averageInterestRate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "usageRatio",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "startLoanDate",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "startLoanRate",
+          "type": "uint256"
+        }
+      ],
+      "name": "calculateAverageInterestRate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "averageLoanRate",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "usageRatio",
+          "type": "uint256"
+        }
+      ],
+      "name": "calculateNewInterestRate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "newAverageRate",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "newInstantRate",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "usageRatio",
+          "type": "uint256"
+        }
+      ],
+      "name": "getInterestRates",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "supplyInterestRate",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "borrowInterestRate",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lastInterestRate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lastUpdateDate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "maxBorrowingInterestRate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "minBorrowingInterestRate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "usageRatio",
+          "type": "uint256"
+        }
+      ],
+      "name": "setInterestRates",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "startDate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

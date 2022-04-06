@@ -6,7 +6,7 @@ myproject
 *.tsbuildinfo
 /deployments
 /cache
-
+/mnemonic.txt
 # VS Code workspace config
 workspace.code-workspace
 

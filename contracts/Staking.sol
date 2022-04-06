@@ -4,7 +4,6 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 
@@ -14,7 +13,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * Tokens are locked for a varying amount of time ()
  */
 contract Staking is ReentrancyGuard {
-	using SafeMath for uint256;
 
 	//Governance token staked
 	ERC20 public tokenAddress;
@@ -66,13 +64,14 @@ contract Staking is ReentrancyGuard {
 	
 	function pendingRewards (address account ) public view returns (uint)
 	{
-		return tokenSurplus().mul(stakeWeight[account]).div(totalWeight).sub(stakeDebt[account]);
+		if ( totalWeight == 0 ) return 0;
+		return tokenSurplus()  *stakeWeight[account] / totalWeight - stakeDebt[account];
 	}
 	
 	/// @notice Returns the total pool rewards waiting to be claimed, i.e current balance - totalDeposits
 	function tokenSurplus() public view returns (uint)
 	{
-		return ERC20(tokenAddress).balanceOf(address(this)).sub(totalDeposits);
+		return ERC20(tokenAddress).balanceOf(address(this)) - totalDeposits;
 	}
 	
 	
@@ -91,25 +90,25 @@ contract Staking is ReentrancyGuard {
 		
 		//Merge with previous existing stake: average lockup, recalculate weight
 		if ( stakeBalance[msg.sender] > 0 ){
-			console.log("Already some balasance %s", stakeBalance[msg.sender]);
+			console.log("Already some balance %s", stakeBalance[msg.sender]);
 			newAmount = amount + stakeBalance[msg.sender];
 			uint oldLockup = 0;
 			if ( stakeUnlockDate[msg.sender] > block.timestamp ) oldLockup = stakeUnlockDate[msg.sender] - block.timestamp;
-			newLockup = ( oldLockup.mul(stakeBalance[msg.sender]) + amount.mul(lockup) ).div( amount.add( stakeBalance[msg.sender] ) );
+			newLockup = ( oldLockup * stakeBalance[msg.sender] + amount * lockup ) / (amount + stakeBalance[msg.sender] );
 		}
 		if ( newLockup < MINIMUM_LOCKUP ) newLockup = MINIMUM_LOCKUP;
 
 		uint newWeight = calculateWeight( newAmount, newLockup );
 		
 		uint oldWeight = stakeWeight[msg.sender];
-		totalWeight = totalWeight.add(newWeight).sub( oldWeight );
+		totalWeight = totalWeight + newWeight - oldWeight;
 		stakeWeight[msg.sender] = newWeight;
 		stakeBalance[msg.sender] = newAmount;
 		stakeUnlockDate[msg.sender] = block.timestamp + newLockup;
 		ERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
 		totalDeposits += amount;
 		
-		stakeDebt[msg.sender] = tokenSurplus().mul(newWeight).div(totalWeight);
+		stakeDebt[msg.sender] = tokenSurplus()*newWeight/totalWeight;
 	}
 	
 	
@@ -127,7 +126,7 @@ contract Staking is ReentrancyGuard {
 		if (amount > 0){
 			//in case of withdraw the new lockup is 0
 			uint newWeight = calculateWeight(stakeBalance[msg.sender] - amount, 0);
-			totalWeight = totalWeight.add(newWeight).sub(stakeWeight[msg.sender]);
+			totalWeight = totalWeight + newWeight - stakeWeight[msg.sender];
 			
 			stakeWeight[msg.sender] = newWeight;
 			stakeBalance[msg.sender] -= amount;
@@ -148,13 +147,13 @@ contract Staking is ReentrancyGuard {
 		claimRewards(msg.sender);
 		
 		uint previousLockup = 0;
-		if ( block.timestamp < stakeUnlockDate[msg.sender] ) previousLockup = stakeUnlockDate[msg.sender].sub(block.timestamp);
+		if ( block.timestamp < stakeUnlockDate[msg.sender] ) previousLockup = stakeUnlockDate[msg.sender] - block.timestamp;
 		uint newLockup = previousLockup + duration;
 		require ( newLockup < MAXIMUM_LOCKUP, "LOCKUP_CANNOT_EXCEED_4_YEARS" );
 
 		uint newWeight = calculateWeight(stakeBalance[msg.sender], newLockup);
 		
-		totalWeight = totalWeight.add(newWeight).sub( stakeWeight[msg.sender] );
+		totalWeight = totalWeight + newWeight - stakeWeight[msg.sender];
 		stakeWeight[msg.sender] = newWeight;
 		stakeUnlockDate[msg.sender] = block.timestamp + newLockup;
 		
@@ -167,9 +166,9 @@ contract Staking is ReentrancyGuard {
 		// The time weight is the (years^2)/10 + 1, eg:
 		// 1 week ~ 0.02y 0.02*0.02/10 + 1 -> 1.00004 
 		// 4years -> 4*4/10 +1 -> 2.6
-		uint yearsE9 = lockDurationInSeconds.mul(1e9).div(86400).div(365);
-		uint timeWeightE18 = yearsE9.mul(yearsE9).div(10).add(1);
-		uint weight = amount.mul(timeWeightE18).div(1e18);
+		uint yearsE9 = lockDurationInSeconds * 1e9 / 86400 / 365;
+		uint timeWeightE18 = yearsE9 * yearsE9 / 10 + 1;
+		uint weight = amount * timeWeightE18 / 1e18;
 		
 		return weight;
 	}
@@ -186,18 +185,18 @@ contract Staking is ReentrancyGuard {
 		if ( stakeBalance[account] > 0 ){
 			uint previousWeight = stakeWeight[account];
 			// User gets a weighted share of the token surplus (total balance - totalDeposits) minus his debt
-			uint pending = tokenSurplus().mul(previousWeight).div(totalWeight).sub(stakeDebt[account]);
+			uint pending = tokenSurplus() * previousWeight / totalWeight - stakeDebt[account];
 			
 			// update stake status: new weight, new stakeDebt
 			uint newLockup = 0;
-			if ( block.timestamp < stakeUnlockDate[account] ) newLockup = stakeUnlockDate[account].sub(block.timestamp);
+			if ( block.timestamp < stakeUnlockDate[account] ) newLockup = stakeUnlockDate[account] - block.timestamp;
 			uint newWeight = calculateWeight(stakeBalance[account], newLockup);
 			
 			stakeWeight[account] = newWeight;
-			totalWeight = totalWeight.add(newWeight).sub(previousWeight);
+			totalWeight = totalWeight + newWeight - previousWeight;
 			// First transfer pending rewards out, then reset debt based on new balance
 			ERC20(tokenAddress).transfer(account, pending);
-			stakeDebt[account] = tokenSurplus().mul(previousWeight).div(totalWeight); //reset rewards
+			stakeDebt[account] = tokenSurplus() * previousWeight / totalWeight; //reset rewards
 			
 			return pending;
 		}

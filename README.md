@@ -1,1 +1,2 @@
 # shear-contracts
+0xC58b01446b26c5E4A6F9e168ea1ABa9b51c35f5e deployer
